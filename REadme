@@ -1,0 +1,14 @@
+## Data sources
+Every number comes from Airbnb's own filings. Each report covers the year it's named for plus earlier years for comparison.
+
+| Years | Figures | Source | Where to look in it |
+|---|---|---|---|
+| 2019, 2020 | Revenue, S&M, ad spend | [Form 10-K, FY2020](https://www.sec.gov/Archives/edgar/data/1559720/000155972021000010/airbnb-10k.htm) | "Revenue" and "Sales and Marketing" tables in Item 7 |
+| 2019, 2020, 2021 | Nights, GBV | [Form 10-K, FY2021](https://www.sec.gov/Archives/edgar/data/1559720/000155972022000006/abnb-20211231.htm) | "Key Business Metrics" in Item 7 |
+| 2021, 2022 | Revenue, Nights, GBV, S&M | [Form 10-K, FY2022](https://www.sec.gov/Archives/edgar/data/1559720/000155972023000003/abnb-20221231.htm) | "Key Business Metrics" and "Sales and Marketing" in Item 7 |
+| 2022, 2023 | S&M (cross-check) | [Form 10-K, FY2023](https://www.sec.gov/Archives/edgar/data/1559720/000155972024000006/abnb-20231231.htm) | "Sales and Marketing" in Item 7 |
+| 2023, 2024 | Revenue, Nights, GBV, S&M | [Form 10-K, FY2024](https://www.sec.gov/Archives/edgar/data/1559720/000155972025000010/abnb-20241231.htm) | "Key Business Metrics" and "Sales and Marketing" in Item 7 |
+| 2024, 2025 | Ad spend ("Brand and performance marketing"), field ops & policy | [Form 10-K, FY2025](https://www.sec.gov/Archives/edgar/data/1559720/000155972026000004/abnb-20251231.htm) | "Sales and Marketing" in Item 7 |
+| 2025 | Revenue, Nights, GBV, S&M | [Q4 2025 shareholder letter](https://s26.q4cdn.com/656283129/files/doc_financials/2025/q4/Airbnb_Q4-2025-Shareholder-Letter.pdf) | Financial tables near the end |
+
+All Airbnb annual reports: [SEC EDGAR](https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001559720&type=10-K). Shareholder letters: [investors.airbnb.com](https://investors.airbnb.com).
