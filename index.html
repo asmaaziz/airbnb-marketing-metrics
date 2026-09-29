@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Airbnb's hidden marketing metrics</title>
+<meta name="author" content="asmaaziz">
+<meta name="description" content="Marketing efficiency metrics Airbnb doesn't report, derived from its public annual filings.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Public+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #E9EEF2; --surface: #F5F8FA; --ink: #16202B; --muted: #566676;
+    --rule: #C9D3DC; --teal: #0E6B6B; --ochre: #B7791F; --neg: #A23B3B;
+    --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121A22; --surface: #18222C; --ink: #E4EBF1; --muted: #93A3B2;
+      --rule: #2C3A47; --teal: #4FB3AE; --ochre: #E0A94A; --neg: #E07A7A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121A22; --surface: #18222C; --ink: #E4EBF1; --muted: #93A3B2;
+    --rule: #2C3A47; --teal: #4FB3AE; --ochre: #E0A94A; --neg: #E07A7A;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 1.0625rem/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 60rem; margin: 0 auto; padding: 3rem 1.25rem 4rem; }
+  .prose { max-width: 38rem; }
+  h1, h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); line-height: 1.05; margin: 0 0 1rem; }
+  h2 { font-size: 2rem; line-height: 1.15; margin: 0 0 .5rem; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--teal); }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--ochre); outline-offset: 2px; }
+  .muted { color: var(--muted); }
+  .small { font-size: .875rem; }
+
+  /* Hero: the cost of one extra night */
+  .hero { padding: 2rem 0 3rem; border-bottom: 1px solid var(--rule); margin-bottom: 3rem; }
+  .meter {
+    margin-top: 2rem; display: grid; gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .meter figure { margin: 0; }
+  .meter .num {
+    font-family: var(--serif); font-size: clamp(3.5rem, 11vw, 6.5rem); line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .meter .avg .num { color: var(--muted); }
+  .meter .marg .num { color: var(--ochre); }
+  .meter figcaption { font-size: .95rem; color: var(--muted); max-width: 18rem; margin-top: .5rem; }
+  .years { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 2rem; }
+  .years button {
+    font: 500 .95rem var(--sans); color: var(--ink); background: transparent;
+    border: 1px solid var(--rule); border-radius: 999px; padding: .4rem 1rem; cursor: pointer;
+  }
+  .years button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .verdict { margin-top: 1.5rem; max-width: 38rem; }
+
+  /* Metric sections */
+  section.metric { margin: 0 0 4rem; }
+  .formula { font-size: .9rem; color: var(--muted); margin-bottom: 1rem; }
+  .formula code { font-family: var(--sans); font-weight: 500; color: var(--ink); }
+  .chart-wrap { position: relative; height: 320px; background: var(--surface); border-radius: 6px; padding: 1rem; }
+  .takeaway { margin-top: 1rem; max-width: 38rem; }
+
+  .rec { max-width: 38rem; padding-left: 1rem; border-left: 3px solid var(--ochre); }
+  .rec strong { font-weight: 700; }
+
+  /* Table */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: .95rem; }
+  th, td { padding: .6rem .9rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child, td:last-child { text-align: left; }
+  thead th { font-weight: 700; background: var(--surface); }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.derived { color: var(--teal); }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 1.5rem; margin-top: 3rem; }
+
+  @media (max-width: 600px) {
+    .meter { grid-template-columns: 1fr; }
+    .chart-wrap { height: 260px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<main>
+
+  <header class="hero">
+    <div class="prose">
+      <h1>What Airbnb's marketing spend actually buys</h1>
+      <p class="muted">Airbnb reports revenue, bookings and total sales &amp; marketing spend. It doesn't report what that spend buys. This page derives the missing efficiency metrics from its annual filings.</p>
+    </div>
+
+    <div class="meter" aria-live="polite">
+      <figure class="avg">
+        <div class="num" id="avgCost">–</div>
+        <figcaption>average marketing spend per night booked in <span class="yr">–</span></figcaption>
+      </figure>
+      <figure class="marg">
+        <div class="num" id="margCost">–</div>
+        <figcaption>extra marketing spend for each <em>additional</em> night gained vs. the year before</figcaption>
+      </figure>
+    </div>
+
+    <div class="years" role="group" aria-label="Choose a year" id="yearButtons"></div>
+    <p class="verdict" id="verdict"></p>
+  </header>
+
+  <section class="metric">
+    <h2>Marginal cost of a new night</h2>
+    <p class="formula">Formula: <code>Δ Sales &amp; marketing ÷ Δ Nights booked</code>, year over year</p>
+    <div class="chart-wrap"><canvas id="c-marginal" aria-label="Marginal marketing cost per incremental night"></canvas></div>
+    <p class="takeaway" id="t-marginal"></p>
+  </section>
+
+  <section class="metric">
+    <h2>Bookings bought per marketing dollar</h2>
+    <p class="formula">Formula: <code>Gross booking value ÷ Sales &amp; marketing</code></p>
+    <div class="chart-wrap"><canvas id="c-leverage" aria-label="Gross booking value per marketing dollar"></canvas></div>
+    <p class="takeaway" id="t-leverage"></p>
+  </section>
+
+  <section class="metric">
+    <h2>Marketing's share of revenue vs. the take rate</h2>
+    <p class="formula">Formulas: <code>Sales &amp; marketing ÷ Revenue</code> and <code>Revenue ÷ Gross booking value</code></p>
+    <div class="chart-wrap"><canvas id="c-share" aria-label="Marketing share of revenue and take rate"></canvas></div>
+    <p class="takeaway" id="t-share"></p>
+  </section>
+
+  <section class="metric">
+    <h2>Price vs. volume</h2>
+    <p class="formula">Formula: <code>Average daily rate ≈ Gross booking value ÷ Nights booked</code>. Growth split into price and volume.</p>
+    <div class="chart-wrap"><canvas id="c-mix" aria-label="Growth decomposed into price and volume"></canvas></div>
+    <p class="takeaway" id="t-mix"></p>
+  </section>
+
+  <section class="metric strategy">
+    <h2>Is the next marketing dollar still paying back?</h2>
+    <p class="formula">Incremental return: <code>Δ Revenue ÷ Δ Marketing spend</code>, year over year. Shown for total sales &amp; marketing and for ad spend only.</p>
+    <div class="chart-wrap"><canvas id="c-roi" aria-label="Incremental revenue per incremental marketing dollar"></canvas></div>
+    <p class="takeaway" id="t-roi"></p>
+    <p class="rec" id="r-roi"></p>
+  </section>
+
+  <section class="metric strategy">
+    <h2>Where does the marketing budget actually go?</h2>
+    <p class="formula">Split of sales &amp; marketing into <code>ad spend</code> (brand and performance marketing) and <code>everything else</code> (field operations, policy, staff).</p>
+    <div class="chart-wrap"><canvas id="c-mixbudget" aria-label="Ad spend vs other marketing costs"></canvas></div>
+    <p class="takeaway" id="t-mixbudget"></p>
+    <p class="rec" id="r-mixbudget"></p>
+  </section>
+
+  <section class="metric">
+    <h2>The data</h2>
+    <p class="formula">Reported figures in black, derived metrics in teal. Edit the <code>DATA</code> array in the source to update every chart.</p>
+    <div class="table-scroll"><table id="dataTable"></table></div>
+  </section>
+
+  <footer class="prose small muted">
+    <p><strong>Sources.</strong> Every figure comes from Airbnb's own filings, linked in the table's Source column. 2019–2020 revenue and marketing are from the <a href="https://www.sec.gov/Archives/edgar/data/1559720/000155972021000010/airbnb-10k.htm">FY2020 10-K</a> and nights and bookings from the <a href="https://www.sec.gov/Archives/edgar/data/1559720/000155972022000006/abnb-20211231.htm">FY2021 10-K</a>; 2021–2022 from the <a href="https://www.sec.gov/Archives/edgar/data/1559720/000155972023000003/abnb-20221231.htm">FY2022 10-K</a>; 2023–2024 from the <a href="https://www.sec.gov/Archives/edgar/data/1559720/000155972025000010/abnb-20241231.htm">FY2024 10-K</a>; 2025 from the <a href="https://www.sec.gov/Archives/edgar/data/1559720/000155972026000004/abnb-20251231.htm">FY2025 10-K</a> and <a href="https://s26.q4cdn.com/656283129/files/doc_financials/2025/q4/Airbnb_Q4-2025-Shareholder-Letter.pdf">Q4 2025 shareholder letter</a>. All filings: <a href="https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&amp;CIK=0001559720&amp;type=10-K">SEC EDGAR</a>.</p>
+    <p><strong>2020 caution.</strong> 2020 sales &amp; marketing includes about $435M of one-time stock-based compensation recognized at the December 2020 IPO, so 2020 marketing costs look higher than the actual ad spend that year.</p>
+    <p><strong>Limits.</strong> Sales &amp; marketing includes brand, performance and some staff costs, and Airbnb doesn't split them publicly. Year-over-year deltas treat all new bookings as marketing-driven, which overstates marketing's role; read the marginal metric as a ceiling, not a precise CAC. Nights include experiences.</p>
+    <p>Analysis by <a href="https://github.com/asmaaziz">Asma Aziz</a>. Source code on <a href="https://github.com/asmaaziz/airbnb-marketing-metrics">GitHub</a>.</p>
+    <p>Not affiliated with Airbnb. Not investment advice.</p>
+  </footer>
+</main>
+
+<script>
+// ---- Reported annual figures. Money in USD millions, nights in millions. ----
+// Every figure is from an Airbnb SEC filing or shareholder letter; see SOURCES below.
+// sm = total sales & marketing expense (GAAP).
+// media = "Brand and performance marketing" line inside S&M (the actual ad spend).
+const DATA = [
+  { year: 2019, revenue: 4805,  gbv: 37963, nights: 326.9, sm: 1622, media: 1140, src: ["fy2020", "fy2021"] },
+  { year: 2020, revenue: 3378,  gbv: 23897, nights: 193.2, sm: 1175, media: 479, src: ["fy2020", "fy2021"] },
+  { year: 2021, revenue: 5992,  gbv: 46877, nights: 300.6, sm: 1186, media: 723, src: ["fy2022"] },
+  { year: 2022, revenue: 8399,  gbv: 63212, nights: 393.7, sm: 1516, media: 1030, src: ["fy2022"] },
+  { year: 2023, revenue: 9917,  gbv: 73252, nights: 448.0, sm: 1763, media: 1208, src: ["fy2024"] },
+  { year: 2024, revenue: 11102, gbv: 81784, nights: 491.5, sm: 2148, media: 1455, src: ["fy2024"] },
+  { year: 2025, revenue: 12241, gbv: 91300, nights: 533.0, sm: 2588, media: 1595, src: ["q42025", "fy2025"] },
+];
+const SOURCES = {
+  fy2020: { label: "Form 10-K, FY2020", url: "https://www.sec.gov/Archives/edgar/data/1559720/000155972021000010/airbnb-10k.htm" },
+  fy2021: { label: "Form 10-K, FY2021", url: "https://www.sec.gov/Archives/edgar/data/1559720/000155972022000006/abnb-20211231.htm" },
+  fy2022: { label: "Form 10-K, FY2022", url: "https://www.sec.gov/Archives/edgar/data/1559720/000155972023000003/abnb-20221231.htm" },
+  fy2023: { label: "Form 10-K, FY2023", url: "https://www.sec.gov/Archives/edgar/data/1559720/000155972024000006/abnb-20231231.htm" },
+  fy2024: { label: "Form 10-K, FY2024", url: "https://www.sec.gov/Archives/edgar/data/1559720/000155972025000010/abnb-20241231.htm" },
+  fy2025: { label: "Form 10-K, FY2025", url: "https://www.sec.gov/Archives/edgar/data/1559720/000155972026000004/abnb-20251231.htm" },
+  q42025: { label: "Q4 2025 shareholder letter", url: "https://s26.q4cdn.com/656283129/files/doc_financials/2025/q4/Airbnb_Q4-2025-Shareholder-Letter.pdf" },
+};
+
+// ---- Derived metrics ----
+const rows = DATA.map((d, i) => {
+  const p = DATA[i - 1];
+  const dNights = p ? d.nights - p.nights : null;
+  const dSm = p ? d.sm - p.sm : null;
+  const adr = d.gbv / d.nights;
+  const prevAdr = p ? p.gbv / p.nights : null;
+  return {
+    ...d,
+    smPerNight: d.sm / d.nights,
+    // Only meaningful when both spend and nights grew
+    marginal: p && dNights > 0 && dSm > 0 ? dSm / dNights : null,
+    leverage: d.gbv / d.sm,
+    smShare: d.sm / d.revenue * 100,
+    takeRate: d.revenue / d.gbv * 100,
+    adr,
+    other: d.sm - d.media,
+    mediaShare: d.media / d.sm * 100,
+    roiTotal: p && d.sm > p.sm ? (d.revenue - p.revenue) / (d.sm - p.sm) : null,
+    roiMedia: p && d.media > p.media ? (d.revenue - p.revenue) / (d.media - p.media) : null,
+    volGrowth: p ? (d.nights / p.nights - 1) * 100 : null,
+    priceGrowth: p ? (adr / prevAdr - 1) * 100 : null,
+  };
+});
+
+const $ = s => document.querySelector(s);
+const usd = v => v == null ? "n/a" : "$" + v.toFixed(2);
+const pct = v => v.toFixed(1) + "%";
+
+// ---- Hero ----
+const hero = rows.filter(r => r.year >= 2020);
+function showYear(y) {
+  const r = rows.find(r => r.year === y);
+  $("#avgCost").textContent = usd(r.smPerNight);
+  $("#margCost").textContent = usd(r.marginal);
+  document.querySelectorAll(".yr").forEach(e => e.textContent = y);
+  document.querySelectorAll("#yearButtons button").forEach(b =>
+    b.setAttribute("aria-pressed", String(+b.dataset.year === y)));
+  let v;
+  if (r.marginal == null) {
+    v = `In ${y} bookings fell while spend dropped, so there's no marginal cost to measure. Airbnb cut performance marketing during the pandemic, and traffic largely held up anyway.`;
+  } else {
+    const ratio = r.marginal / r.smPerNight;
+    v = ratio > 1.5
+      ? `Each new night in ${y} cost ${ratio.toFixed(1)}× the average. Growth got noticeably more expensive to buy.`
+      : ratio < 0.75
+        ? `Each new night in ${y} cost well under the average. Growth was coming mostly from demand Airbnb didn't pay for.`
+        : `New nights in ${y} cost about the same as existing ones, roughly ${ratio.toFixed(1)}× the average.`;
+  }
+  $("#verdict").textContent = v;
+}
+hero.forEach(r => {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = r.year; b.dataset.year = r.year;
+  b.onclick = () => showYear(r.year);
+  $("#yearButtons").appendChild(b);
+});
+showYear(DATA[DATA.length - 1].year);
+
+// ---- Charts ----
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const charts = [];
+function baseOpts(yFmt) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: css("--ink"), font: { family: "Public Sans" }, boxWidth: 12 } },
+      tooltip: { callbacks: { label: c => `${c.dataset.label}: ${yFmt(c.parsed.y)}` } },
+    },
+    scales: {
+      x: { ticks: { color: css("--muted") }, grid: { display: false } },
+      y: { ticks: { color: css("--muted"), callback: yFmt }, grid: { color: css("--rule") } },
+    },
+  };
+}
+function build() {
+  charts.forEach(c => c.destroy()); charts.length = 0;
+  const years = rows.map(r => r.year);
+  const teal = css("--teal"), ochre = css("--ochre"), muted = css("--muted");
+  Chart.defaults.font.family = "Public Sans";
+
+  const m = rows.filter(r => r.year >= 2021);
+  charts.push(new Chart($("#c-marginal"), {
+    type: "bar",
+    data: { labels: m.map(r => r.year), datasets: [
+      { label: "Marginal cost per new night", data: m.map(r => r.marginal), backgroundColor: ochre },
+      { label: "Average cost per night", data: m.map(r => r.smPerNight), backgroundColor: muted },
+    ]},
+    options: baseOpts(v => "$" + Number(v).toFixed(2)),
+  }));
+
+  charts.push(new Chart($("#c-leverage"), {
+    type: "line",
+    data: { labels: years, datasets: [
+      { label: "GBV per $1 of marketing", data: rows.map(r => r.leverage), borderColor: teal, backgroundColor: teal, tension: .25, pointRadius: 4 },
+    ]},
+    options: baseOpts(v => "$" + Number(v).toFixed(0)),
+  }));
+
+  charts.push(new Chart($("#c-share"), {
+    type: "line",
+    data: { labels: years, datasets: [
+      { label: "Marketing as % of revenue", data: rows.map(r => r.smShare), borderColor: ochre, backgroundColor: ochre, tension: .25, pointRadius: 4 },
+      { label: "Take rate (revenue ÷ GBV)", data: rows.map(r => r.takeRate), borderColor: teal, backgroundColor: teal, tension: .25, pointRadius: 4 },
+    ]},
+    options: baseOpts(v => Number(v).toFixed(0) + "%"),
+  }));
+
+  const g = rows.filter(r => r.year >= 2021);
+  charts.push(new Chart($("#c-mix"), {
+    type: "bar",
+    data: { labels: g.map(r => r.year), datasets: [
+      { label: "Volume growth (nights)", data: g.map(r => r.volGrowth), backgroundColor: teal },
+      { label: "Price growth (ADR)", data: g.map(r => r.priceGrowth), backgroundColor: ochre },
+    ]},
+    options: baseOpts(v => Number(v).toFixed(0) + "%"),
+  }));
+
+  const r2 = rows.filter(r => r.year >= 2022);
+  charts.push(new Chart($("#c-roi"), {
+    type: "bar",
+    data: { labels: r2.map(r => r.year), datasets: [
+      { label: "Per extra $1 of total sales & marketing", data: r2.map(r => r.roiTotal), backgroundColor: muted },
+      { label: "Per extra $1 of ad spend", data: r2.map(r => r.roiMedia), backgroundColor: teal },
+    ]},
+    options: baseOpts(v => "$" + Number(v).toFixed(2)),
+  }));
+
+  const r3 = rows.filter(r => r.year !== 2020);
+  const o = baseOpts(v => "$" + Number(v).toLocaleString() + "M");
+  o.scales.x.stacked = true; o.scales.y.stacked = true;
+  o.plugins.tooltip.callbacks.footer = items => {
+    const r = r3[items[0].dataIndex];
+    return `Ad spend share: ${r.mediaShare.toFixed(0)}%`;
+  };
+  charts.push(new Chart($("#c-mixbudget"), {
+    type: "bar",
+    data: { labels: r3.map(r => r.year), datasets: [
+      { label: "Ad spend", data: r3.map(r => r.media), backgroundColor: teal },
+      { label: "Field ops, policy & staff", data: r3.map(r => r.other), backgroundColor: ochre },
+    ]},
+    options: o,
+  }));
+}
+build();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", build);
+
+// ---- Takeaways computed from the data, so they stay true if DATA changes ----
+(function takeaways() {
+  const last = rows[rows.length - 1], first = rows.find(r => r.year === 2022);
+  const avgChg = (last.smPerNight / first.smPerNight - 1) * 100;
+  const margX = last.marginal / first.marginal;
+  $("#t-marginal").textContent =
+    `Between ${first.year} and ${last.year} the marginal cost of a new night went from ${usd(first.marginal)} to ${usd(last.marginal)}, about ${margX.toFixed(1)}× higher. The average rose only ${avgChg.toFixed(0)}% (${usd(first.smPerNight)} to ${usd(last.smPerNight)}). The average hides how fast the cost of growth is climbing.`;
+  const peak = rows.reduce((a, b) => b.leverage > a.leverage ? b : a);
+  $("#t-leverage").textContent =
+    `Each marketing dollar sat next to $${peak.leverage.toFixed(0)} of bookings at the ${peak.year} peak, versus $${last.leverage.toFixed(0)} in ${last.year}. Falling leverage alongside rising spend is the pattern to watch.`;
+  const pre = rows[0];
+  const low = rows.reduce((a, b) => b.smShare < a.smShare ? b : a);
+  $("#t-share").textContent =
+    `Marketing fell from ${pct(pre.smShare)} of revenue in ${pre.year} to a low of ${pct(low.smShare)} in ${low.year}, while the take rate rose from ${pct(pre.takeRate)} to ${pct(last.takeRate)}. Since ${low.year} the share has climbed back to ${pct(last.smShare)}: still far below pre-pandemic, but trending up.`;
+  $("#t-mix").textContent =
+    `In ${last.year}, nights grew ${pct(last.volGrowth)} and the average nightly rate moved ${pct(last.priceGrowth)}. Once post-pandemic price increases faded, growth had to come from volume, which is the part marketing has to pay for.`;
+
+  // Analysis: incremental return
+  const a = rows.find(r => r.year === 2022), p2 = rows[rows.length - 2];
+  $("#t-roi").textContent =
+    `Each extra dollar of total marketing came with $${a.roiTotal.toFixed(2)} of extra revenue in ${a.year}, falling to $${last.roiTotal.toFixed(2)} in ${last.year}. ` +
+    `Counting ad spend only, the picture is different: the return dipped to $${p2.roiMedia.toFixed(2)} in ${p2.year} and recovered to $${last.roiMedia.toFixed(2)} in ${last.year}.`;
+  $("#r-roi").innerHTML =
+    `<strong>Recommendation:</strong> judge media efficiency on ad spend, not total sales &amp; marketing. On that basis, ${last.year}'s media is still returning well above $1; the decline in total return comes from costs outside the ad budget. Treat these as upper bounds, since some revenue growth would have happened without any marketing.`;
+
+  // Analysis: budget mix
+  const b = rows.find(r => r.year === 2024);
+  const steady = rows.filter(r => r.year >= 2022 && r.year < last.year);
+  const otherGrowth = (last.other / b.other - 1) * 100, mediaGrowth = (last.media / b.media - 1) * 100;
+  const extra = last.sm - b.sm, extraOther = last.other - b.other;
+  $("#t-mixbudget").textContent =
+    `Ad spend was a steady ${Math.min(...steady.map(r => r.mediaShare)).toFixed(0)}–${Math.max(...steady.map(r => r.mediaShare)).toFixed(0)}% of the budget from ${steady[0].year} to ${steady[steady.length-1].year}. In ${last.year} it fell to ${last.mediaShare.toFixed(0)}%. ` +
+    `Of the $${extra}M added in ${last.year}, $${extraOther}M (${(extraOther / extra * 100).toFixed(0)}%) went outside the ad budget: those costs grew ${otherGrowth.toFixed(0)}% while ad spend grew ${mediaGrowth.toFixed(0)}%.`;
+  $("#r-mixbudget").innerHTML =
+    `<strong>Recommendation:</strong> report "working" (ad) and "non-working" (people and operations) spend separately. A rising cost per booking can come from either one, and they need different fixes: media optimization for the first, headcount and ops planning for the second. 2020 is left out because its total includes one-time IPO stock compensation.`;
+})();
+
+// ---- Table ----
+(function table() {
+  const cols = [
+    ["Year", r => r.year],
+    ["Revenue ($M)", r => r.revenue.toLocaleString()],
+    ["GBV ($M)", r => r.gbv.toLocaleString()],
+    ["Nights (M)", r => r.nights.toFixed(1)],
+    ["S&M ($M)", r => r.sm.toLocaleString()],
+    ["Ad spend ($M)", r => r.media.toLocaleString()],
+    ["S&M / night", r => usd(r.smPerNight), 1],
+    ["Marginal / night", r => usd(r.marginal), 1],
+    ["GBV per S&M $", r => "$" + r.leverage.toFixed(1), 1],
+    ["S&M % rev", r => pct(r.smShare), 1],
+    ["Take rate", r => pct(r.takeRate), 1],
+    ["ADR", r => "$" + r.adr.toFixed(0), 1],
+    ["Source", r => r.src.map(k => `<a href="${SOURCES[k].url}">${SOURCES[k].label}</a>`).join(", ")],
+  ];
+  const t = $("#dataTable");
+  t.innerHTML = "<thead><tr>" + cols.map(c => `<th scope="col">${c[0]}</th>`).join("") + "</tr></thead><tbody>" +
+    rows.map(r => "<tr>" + cols.map(c => `<td${c[2] ? ' class="derived"' : ""}>${c[1](r)}</td>`).join("") + "</tr>").join("") +
+    "</tbody>";
+})();
+</script>
+</body>
+</html>
